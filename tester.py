@@ -19,7 +19,10 @@ def WGAN_tester(opt):
     def load_model_generator(net, epoch, opt):
         model_name = 'deepfillv2_WGAN_G_epoch%d_batchsize%d.pth' % (epoch, 4)
         model_name = os.path.join('pretrained_model', model_name)
-        pretrained_dict = torch.load(model_name)
+        device = "cuda"
+        if opt.gpu_ids == "-1":
+            device = "cpu"
+        pretrained_dict = torch.load(model_name, map_location=device)
         generator.load_state_dict(pretrained_dict)
 
     # ----------------------------------------
@@ -27,8 +30,8 @@ def WGAN_tester(opt):
     # ----------------------------------------
 
     # configurations
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
+    if not os.path.exists(opt.results_path):
+        os.makedirs(opt.results_path)
 
     # Build networks
     generator = utils.create_generator(opt).eval()
@@ -37,7 +40,8 @@ def WGAN_tester(opt):
     print('-------------------------Pretrained Model Loaded-------------------------')
 
     # To device
-    generator = generator.cuda()
+    if opt.gpu_ids != "-1":
+        generator = generator.cuda()
     
     # ----------------------------------------
     #       Initialize training dataset
@@ -55,8 +59,9 @@ def WGAN_tester(opt):
     # ----------------------------------------
     # Testing loop
     for batch_idx, (img, mask) in enumerate(dataloader):
-        img = img.cuda()
-        mask = mask.cuda()
+        if opt.gpu_ids != "-1":
+            img = img.cuda()
+            mask = mask.cuda()
 
         # Generator output
         with torch.no_grad():
@@ -70,5 +75,5 @@ def WGAN_tester(opt):
         mask = torch.cat((mask, mask, mask), 1)
         img_list = [second_out_wholeimg]
         name_list = ['second_out']
-        utils.save_sample_png(sample_folder = results_path, sample_name = '%d' % (batch_idx + 1), img_list = img_list, name_list = name_list, pixel_max_cnt = 255)
+        utils.save_sample_png(sample_folder = opt.results_path, sample_name = '%d' % (batch_idx + 1), img_list = img_list, name_list = name_list, pixel_max_cnt = 255)
         print('----------------------batch_idx%d' % (batch_idx + 1) + ' has been finished----------------------')

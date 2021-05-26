@@ -102,7 +102,7 @@ class GatedGenerator(nn.Module):
             nn.Tanh()
         )
         self.context_attention = ContextualAttention(ksize=3, stride=1, rate=2, fuse_k=3, softmax_scale=10,
-                                                     fuse=True)
+                                                     fuse=True, use_cuda = (opt.gpu_ids != "-1"))
 
         
     def forward(self, img, mask):
